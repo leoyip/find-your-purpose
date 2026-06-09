@@ -3,86 +3,111 @@
 # pre-commit 安全钩子
 # 提交前检查是否含有敏感信息（IP、API Key、本地路径等）
 # ============================================================
+# 使用 grep -E (ERE) 代替 -P (Perl)，兼容 macOS BSD grep
 
 RED='\033[0;31m'
+GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BOLD='\033[1m'
 NC='\033[0m'
 ERRORS=0
-WARNS=0
+RESULTS=""
 
-echo "🔍 安全检查中..."
+GREP='grep -E'
 
-# 获取暂存的文件列表（只检查将要提交的文件）
-for file in $(git diff --cached --name-only); do
-    # 跳过安全文件
+STAGED=$(git diff --cached --name-only)
+if [ -z "$STAGED" ]; then
+    echo -e "${YELLOW}⚠️  没有暂存文件，请先 git add${NC}"
+    exit 0
+fi
+
+echo ""
+echo -e "${BOLD}🔐 提交安全扫描${NC}"
+echo "────────────────────────────────────────"
+
+for file in $STAGED; do
     [[ "$file" == ".env" || "$file" == ".env."* || "$file" == ".githooks/"* || "$file" == ".github/"* ]] && continue
+    [ ! -f "$file" ] && continue
 
-    if [ ! -f "$file" ]; then
-        continue
-    fi
+    file_errors=""
 
-    # ============================================================
-    # 规则1：IP 地址检测（仅对文档类文件）
-    # ============================================================
+    # ── 规则1：IP 地址 ──
     if [[ "$file" == *.md ]] || [[ "$file" == *.txt ]] || [[ "$file" == *.rst ]]; then
-        matches=$(grep -nP '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' "$file" 2>/dev/null)
+        matches=$($GREP -n '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' "$file" 2>/dev/null)
         if [ -n "$matches" ]; then
-            # 排除示例 IP
-            safe=$(echo "$matches" | grep -vP '(0\.0\.0\.0|127\.0\.0\.1|192\.168\.|10\.\d+\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|255\.255\.255\.255|8\.8\.8\.8)')
+            safe=$(echo "$matches" | $GREP -v '(0\.0\.0\.0|127\.0\.0\.1|192\.168\.|10\.[0-9]+\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|255\.255\.255\.255|8\.8\.8\.8|localhost)')
             if [ -n "$safe" ]; then
-                echo -e "${RED}⚠️  发现真实 IP 地址 → $file${NC}"
-                echo "$safe"
+                file_errors+="  ⚠️  发现 IP 地址\n"
+                while IFS= read -r line; do
+                    lineno=$(echo "$line" | cut -d: -f1)
+                    content=$(echo "$line" | cut -d: -f2- | sed 's/^[[:space:]]*//')
+                    file_errors+="      📍 第 ${lineno} 行  ${content}\n"
+                done <<< "$safe"
                 ERRORS=$((ERRORS+1))
             fi
         fi
     fi
 
-    # ============================================================
-    # 规则2：API Key 检测（sk- 开头的密钥）
-    # ============================================================
-    matches=$(grep -nP 'sk-[A-Za-z0-9_-]{20,}' "$file" 2>/dev/null)
+    # ── 规则2：API Key ──
+    matches=$($GREP -n 'sk-[A-Za-z0-9_-]{20,}' "$file" 2>/dev/null)
     if [ -n "$matches" ]; then
-        echo -e "${RED}⚠️  发现 API Key → $file${NC}"
-        echo "$matches"
+        file_errors+="  ⚠️  发现 API Key\n"
+        while IFS= read -r line; do
+            lineno=$(echo "$line" | cut -d: -f1)
+            file_errors+="      🔑 第 ${lineno} 行\n"
+        done <<< "$matches"
         ERRORS=$((ERRORS+1))
     fi
 
-    # ============================================================
-    # 规则3：本地用户路径检测
-    # ============================================================
-    if grep -qP '/Users/[^/]+/' "$file" 2>/dev/null; then
-        matches=$(grep -nP '/Users/[^/]+/' "$file")
-        echo -e "${RED}⚠️  发现本地路径 → $file${NC}"
-        echo "$matches"
+    # ── 规则3：本地路径 ──
+    if $GREP -q '/Users/[^/]+/' "$file" 2>/dev/null; then
+        matches=$($GREP -n '/Users/[^/]+/' "$file")
+        file_errors+="  ⚠️  发现本地路径\n"
+        while IFS= read -r line; do
+            lineno=$(echo "$line" | cut -d: -f1)
+            file_errors+="      📁 第 ${lineno} 行\n"
+        done <<< "$matches"
         ERRORS=$((ERRORS+1))
     fi
 
-    # ============================================================
-    # 规则4：AWS / 云服务密钥检测
-    # ============================================================
-    if grep -qP 'AKIA[0-9A-Z]{16}' "$file" 2>/dev/null; then
-        matches=$(grep -nP 'AKIA[0-9A-Z]{16}' "$file")
-        echo -e "${RED}⚠️  发现云服务密钥 → $file${NC}"
-        echo "$matches"
+    # ── 规则4：云密钥 ──
+    if $GREP -q 'AKIA[0-9A-Z]{16}' "$file" 2>/dev/null; then
+        matches=$($GREP -n 'AKIA[0-9A-Z]{16}' "$file")
+        file_errors+="  ⚠️  发现云密钥\n"
+        while IFS= read -r line; do
+            lineno=$(echo "$line" | cut -d: -f1)
+            file_errors+="      🔑 第 ${lineno} 行\n"
+        done <<< "$matches"
         ERRORS=$((ERRORS+1))
+    fi
+
+    if [ -n "$file_errors" ]; then
+        RESULTS+="\n${RED}📄 $file${NC}\n"
+        RESULTS+="$file_errors"
     fi
 done
 
+echo ""
+
 if [ $ERRORS -gt 0 ]; then
     echo ""
-    echo -e "${RED}========================================${NC}"
-    echo -e "${RED}❌ 发现 $ERRORS 个敏感信息，提交已阻止${NC}"
-    echo -e "${RED}========================================${NC}"
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${RED}  ❌ 发现 ${ERRORS} 个安全问题，提交已阻止${NC}"
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    echo "请检查上述文件，将真实信息替换为占位符（如 <服务器IP>）后再提交。"
+    echo -e "$RESULTS"
     echo ""
-    echo "如需强制提交（不推荐）：git commit --no-verify"
+    echo -e "${YELLOW}  修复建议${NC}"
+    echo -e "    将真实信息替换为占位符："
+    echo -e "      IP 地址   → ${YELLOW}<服务器IP>${NC}"
+    echo -e "      API Key   → ${YELLOW}sk-xxx${NC}"
+    echo -e "      本地路径  → ${YELLOW}/path/to/project${NC}"
+    echo ""
+    echo -e "  强制提交（不推荐）：${BOLD}git commit --no-verify${NC}"
+    echo ""
     exit 1
 fi
 
-if [ $WARNS -gt 0 ]; then
-    echo -e "${YELLOW}⚠️  $WARNS 个警告${NC}"
-fi
-
-echo -e "✅ 安全检查通过"
+echo -e "${GREEN}  ✅ 安全检查通过，未发现敏感信息${NC}"
+echo ""
 exit 0
