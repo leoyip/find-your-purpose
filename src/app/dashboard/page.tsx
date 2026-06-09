@@ -4,6 +4,7 @@ import { useStore } from '@/store';
 import { MODULES } from '@/types';
 import Link from 'next/link';
 import { CheckCircle, ArrowRight, Sparkles, Target, Heart, Zap, Compass } from 'lucide-react';
+import ExportReport from '@/components/ExportReport';
 
 export default function DashboardPage() {
   const store = useStore();
@@ -70,6 +71,9 @@ export default function DashboardPage() {
           );
         })}
       </div>
+
+      {/* Export section */}
+      <ExportReport />
 
       {/* Values section */}
       {store.coreValues.length > 0 && (
