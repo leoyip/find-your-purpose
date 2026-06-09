@@ -56,23 +56,35 @@ export default function ExportReport() {
       const html = generateHtmlReport(data, currentUser?.name || '我');
 
       // Open in new window for print-to-PDF
-      const win = window.open('', '_blank');
+      // 使用 Blob URL 替代 document.write（更安全）
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      const win = window.open(blobUrl, '_blank');
       if (!win) {
         alert('请允许弹出窗口以导出 PDF');
+        URL.revokeObjectURL(blobUrl);
         setExporting(null);
         return;
       }
-      win.document.write(html);
-      win.document.close();
-      win.focus();
 
       // Wait for rendering then trigger print
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         win.print();
+        URL.revokeObjectURL(blobUrl);
         setDone(true);
         setTimeout(() => setDone(false), 2000);
         setExporting(null);
       }, 500);
+
+      // 页面关闭时清理
+      const checkClosed = setInterval(() => {
+        if (win.closed) {
+          clearInterval(checkClosed);
+          clearTimeout(timer);
+          URL.revokeObjectURL(blobUrl);
+          setExporting(null);
+        }
+      }, 1000);
     } catch (e) {
       console.error('导出失败', e);
       alert('导出失败，请重试');

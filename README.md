@@ -33,6 +33,12 @@ LLM_MODEL=minimax-text-01
 
 支持任何 OpenAI 兼容格式的 API（DeepSeek、OpenAI、通义千问等）。
 
+可选环境变量：
+
+| 变量 | 说明 |
+|------|------|
+| `ALLOWED_ORIGINS` | 生产环境限制 API 调用来源，逗号分隔（如 `https://mydomain.com`）|
+
 ## 📦 部署
 
 ### 自托管
