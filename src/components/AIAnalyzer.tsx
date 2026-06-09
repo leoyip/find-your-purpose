@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Sparkles, Loader2, Check, X, AlertCircle } from 'lucide-react';
 import type { AnalysisType } from '@/lib/ai';
+import { useUserStore } from '@/userStore';
+import { getProvider } from '@/lib/ai-providers';
 
 interface AIAnalyzerProps {
   /** 分析类型 */
@@ -44,11 +46,26 @@ export default function AIAnalyzer({
     setError(null);
     setResult(null);
 
+    // 读取用户自定义 AI 配置
+    const { users, currentUserId } = useUserStore.getState();
+    const user = users.find((u) => u.id === currentUserId);
+    let userConfig = undefined;
+    if (user?.aiApiKey) {
+      const provider = getProvider(user.aiProvider || '');
+      if (provider) {
+        userConfig = {
+          apiBase: provider.baseUrl,
+          apiKey: user.aiApiKey,
+          model: user.aiModel || provider.models[0].id,
+        };
+      }
+    }
+
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, text, context }),
+        body: JSON.stringify({ type, text, context, userConfig }),
       });
 
       const data = await response.json();

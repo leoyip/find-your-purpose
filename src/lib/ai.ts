@@ -7,6 +7,12 @@ export interface AIAnalysisRequest {
   type: AnalysisType;
   text: string;
   context?: Record<string, unknown>;
+  /** 用户自定义 AI 配置（可选，不传则用服务器环境变量） */
+  userConfig?: {
+    apiBase: string;
+    apiKey: string;
+    model: string;
+  };
 }
 
 export type AnalysisType =
@@ -97,18 +103,24 @@ export function getUserPrompt(type: AnalysisType, text: string): string {
  * 调用 LLM API 进行文本分析
  */
 export async function analyzeText(request: AIAnalysisRequest): Promise<AIAnalysisResult> {
-  const { type, text, context } = request;
+  const { type, text, context, userConfig } = request;
 
   if (!text.trim()) {
     return { success: false, error: '输入文本为空' };
   }
 
-  const apiBase = process.env.LLM_API_BASE || 'https://api.deepseek.com';
-  const apiKey = process.env.LLM_API_KEY || '';
-  const model = process.env.LLM_MODEL || 'deepseek-chat';
+  // 优先级：用户自定义配置 > 服务器环境变量 > 默认值
+  const apiBase = userConfig?.apiBase || process.env.LLM_API_BASE || 'https://api.deepseek.com';
+  const apiKey = userConfig?.apiKey || process.env.LLM_API_KEY || '';
+  const model = userConfig?.model || process.env.LLM_MODEL || 'deepseek-chat';
 
   if (!apiKey) {
-    return { success: false, error: '未配置 API Key。请在 .env.local 中设置 LLM_API_KEY' };
+    return {
+      success: false,
+      error: userConfig?.apiBase
+        ? '请先在设置中填写 API Key'
+        : '服务器未配置 API Key。管理员需在 .env 中设置 LLM_API_KEY，或用户在设置中自行配置',
+    };
   }
 
   try {
@@ -130,10 +142,16 @@ export async function analyzeText(request: AIAnalysisRequest): Promise<AIAnalysi
     });
 
     if (!response.ok) {
-      const errorBody = await response.text().catch(() => '');
+      // 错误信息脱敏，避免泄露 API Key
+      let errorBody = await response.text().catch(() => '');
+      if (errorBody.length > 200) errorBody = errorBody.slice(0, 200);
+      // API Key 可能出现在错误消息中，替换掉
+      if (apiKey) {
+        errorBody = errorBody.replace(new RegExp(apiKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '***');
+      }
       return {
         success: false,
-        error: `API 请求失败 (${response.status}): ${errorBody || response.statusText}`,
+        error: `API 请求失败 (${response.status})`,
       };
     }
 

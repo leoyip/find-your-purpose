@@ -121,6 +121,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     { path: '/', label: '路线图', emoji: '🗺️' },
     ...MODULES.map((m) => ({ path: `/${m.id}`, label: m.subtitle, emoji: m.emoji })),
     { path: '/dashboard', label: '仪表盘', emoji: '📊' },
+    { path: '/settings', label: 'AI 设置', emoji: '⚙️' },
   ];
 
   return (
