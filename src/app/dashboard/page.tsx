@@ -188,6 +188,14 @@ export default function DashboardPage() {
         </section>
       )}
 
+      {/* 隐私说明 */}
+      <div className="text-center">
+        <div className="inline-flex items-center gap-1.5 text-xs text-muted/60 bg-amber-50/50 px-4 py-2 rounded-full">
+          <span>🔒</span>
+          <span>所有数据仅保存在你的浏览器中，不上传服务器</span>
+        </div>
+      </div>
+
       {/* CTA */}
       {passedHypotheses.length > 0 && (
         <div className="bg-accent-light/20 border border-accent/30 rounded-2xl p-6 text-center">

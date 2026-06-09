@@ -137,6 +137,14 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* 隐私说明 */}
+      <section className="text-center py-4">
+        <div className="inline-flex items-center gap-1.5 text-xs text-muted/60 bg-amber-50/50 px-4 py-2 rounded-full">
+          <span>🔒</span>
+          <span>所有数据仅保存在你的浏览器中，不上传服务器</span>
+        </div>
+      </section>
+
       {/* CTA */}
       {doneSteps > 0 && doneSteps < totalSteps && (
         <div className="text-center py-4">
