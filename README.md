@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧭 找到你想做的事 — 交互式自我认知工具
 
-## Getting Started
+基于《如何找到你想做的事》（八木仁平）一书，将书中方法论转化为交互式网站，帮助你用逻辑而非直觉找到真正想做的事。
 
-First, run the development server:
+## ✨ 功能
+
+- **🧭 模块1：价值观（Why）** — 5步找到你的人生指南针
+- **⚡ 模块2：才能（How）** — 发现你的无意识天赋
+- **❤️ 模块3：热情（What）** — 探索真正好奇的领域
+- **🔗 模块4：组合筛选** — What × How × Why 组合成想做的事
+- **🤖 AI 辅助分析** — 输入自然语言，AI 自动提取关键词
+- **👥 多用户支持** — 多人共用，数据独立隔离
+- **📊 仪表盘** — 完整自我认知报告
+
+## 🚀 快速开始
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开 http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔧 配置
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+在项目根目录创建 `.env` 文件：
 
-## Learn More
+```env
+LLM_API_BASE=https://api.minimax.chat/v1
+LLM_API_KEY=your_api_key_here
+LLM_MODEL=minimax-text-01
+```
 
-To learn more about Next.js, take a look at the following resources:
+支持任何 OpenAI 兼容格式的 API（DeepSeek、OpenAI、通义千问等）。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📦 部署
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 自托管
 
-## Deploy on Vercel
+```bash
+npm run build
+npm start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+推荐使用 PM2 管理进程：
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm install -g pm2
+pm2 start npm --name "find-purpose" -- start
+```
+
+### 注意事项
+
+- 用户数据存储在浏览器 localStorage，服务器不保存用户数据
+- API Key 通过环境变量配置，不要提交到 Git
+
+## 🗂 项目结构
+
+```
+src/
+├── app/
+│   ├── page.tsx              # 首页路线图
+│   ├── layout.tsx            # 布局（侧边栏 + 用户管理）
+│   ├── module1-4/            # 4个核心模块
+│   ├── dashboard/            # 仪表盘
+│   └── api/analyze/route.ts  # AI 代理接口
+├── components/               # 可复用组件
+├── store.ts                  # 答题数据状态
+├── userStore.ts              # 用户管理
+└── lib/ai.ts                 # AI API 封装
+```
+
+## 📄 其他文档
+
+- [OPS.md](OPS.md) — 运维手册（服务器维护、更新、配置）
+
+## 📖 参考
+
+- 《如何找到你想做的事》八木仁平 著
