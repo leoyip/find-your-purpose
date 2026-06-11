@@ -139,9 +139,9 @@ export default function HomePage() {
 
       {/* 隐私说明 */}
       <section className="text-center py-4">
-        <div className="inline-flex items-center gap-1.5 text-xs text-muted/60 bg-amber-50/50 px-4 py-2 rounded-full">
-          <span>🔒</span>
-          <span>所有数据仅保存在你的浏览器中，不上传服务器</span>
+        <div className="inline-flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-5 py-2.5 rounded-xl shadow-sm">
+          <span className="text-base">🔒</span>
+          <span className="font-medium">所有数据仅保存在你的浏览器中，不上传服务器</span>
         </div>
       </section>
 

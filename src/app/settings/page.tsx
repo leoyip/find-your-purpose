@@ -227,8 +227,11 @@ export default function SettingsPage() {
       </div>
 
       {/* 隐私说明 */}
-      <div className="text-center text-xs text-muted/60">
-        <p>🔒 你的 API Key 仅保存在本地浏览器中，发送到 AI 服务时通过服务器中转，不会被记录</p>
+      <div className="text-center">
+        <div className="inline-flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-5 py-2.5 rounded-xl shadow-sm">
+          <span className="text-base">🔒</span>
+          <span className="font-medium">你的 API Key 仅保存在本地浏览器中，发送到 AI 服务时通过服务器中转，不会被记录</span>
+        </div>
       </div>
     </div>
   );
