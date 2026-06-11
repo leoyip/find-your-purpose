@@ -5,6 +5,7 @@ import { useStore } from '@/store';
 import Link from 'next/link';
 import { ArrowRight, ArrowLeft, Check, Sparkles, Trash2, Plus, Lightbulb } from 'lucide-react';
 import AIAnalyzer from '@/components/AIAnalyzer';
+import CsvImport from '@/components/CsvImport';
 
 export default function Module4Page() {
   const store = useStore();
@@ -46,6 +47,19 @@ export default function Module4Page() {
         <div>
           <h1 className="text-2xl font-bold text-ink">组合成想做的事</h1>
           <p className="text-muted text-sm">What × How × Why — 找到真正想做的事</p>
+        </div>
+      </div>
+
+      {/* Book reference hint */}
+      <div className="bg-blue-50/80 border border-blue-200/60 rounded-xl p-3 md:p-4 flex items-start gap-3">
+        <span className="text-lg flex-shrink-0 mt-0.5">📖</span>
+        <div className="text-sm">
+          <p className="font-medium text-blue-800">关联书中第七部分：组合成真正想做的事</p>
+          <p className="text-blue-600/80 mt-0.5">
+            建议先阅读书中关于 <strong>两个核心公式</strong> 的内容（第七部分）：
+            <strong>「喜欢×擅长=想做的事」</strong> 和 <strong>「喜欢×擅长×重要=真正想做的事」</strong>。
+            理解"想做的事最初只是假设"这个观念，大胆组合、小步验证。
+          </p>
         </div>
       </div>
 
@@ -153,6 +167,43 @@ export default function Module4Page() {
                     />
                   </div>
                 )}
+
+                {/* CSV 批量导入假设 */}
+                <CsvImport
+                  title="📥 批量导入组合假设"
+                  description={'下载模板，填写「喜欢的事 × 擅长的事」组合后上传 CSV 文件批量导入。'}
+                  template={{
+                    filename: '组合假设模板.csv',
+                    headers: ['passion', 'talent', 'description', 'score'],
+                    sampleRows: [
+                      ['心理学', '善于倾听', '用倾听能力在心理咨询领域帮助他人', '8'],
+                      ['教育', '能把复杂事情讲清楚', '用教学能力在在线教育领域创造价值', '7'],
+                      ['写作', '做事有条理', '用规划能力撰写系统性的知识内容', '6'],
+                    ],
+                  }}
+                  onImport={(rows) => {
+                    rows.forEach((row) => {
+                      if (row.description?.trim() && !store.hypotheses.find(h => h.description === row.description.trim())) {
+                        store.addHypothesis({
+                          id: Date.now().toString() + Math.random(),
+                          passion: row.passion?.trim() || '综合',
+                          talent: row.talent?.trim() || '综合',
+                          description: row.description.trim(),
+                          score: Math.min(10, Math.max(1, parseInt(row.score) || 5)),
+                          passedFilter: null,
+                        });
+                      }
+                    });
+                  }}
+                  validateRow={(row, i) => {
+                    if (!row.description?.trim()) return `第 ${i + 1} 行缺少假设描述 (description 列为空)`;
+                    if (row.score && (isNaN(parseInt(row.score)) || parseInt(row.score) < 1 || parseInt(row.score) > 10)) {
+                      return `第 ${i + 1} 行评分无效：应为 1~10 的整数`;
+                    }
+                    return null;
+                  }}
+                  hint="passion = 喜欢的领域，talent = 擅长的才能，score = 感兴趣程度（1-10），不填默认 5 分"
+                />
 
                 {/* Combined list */}
                 {store.hypotheses.length > 0 && (

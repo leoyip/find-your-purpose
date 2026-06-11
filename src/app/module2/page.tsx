@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useStore } from '@/store';
 import { ArrowRight, ArrowLeft, Plus, Trash2, Check, Lightbulb, Sparkles } from 'lucide-react';
 import AIAnalyzer from '@/components/AIAnalyzer';
+import CsvImport from '@/components/CsvImport';
 
 const TALENT_QUESTIONS = [
   { id: 'tq1', title: '迄今为止感到最充实的体验是什么？', desc: '充实 = 做擅长的事时的状态。回想一下什么时候你感觉"时间飞逝"、"完全投入"。', placeholder: '例：大学时组织了一场活动，从策划到执行全身心投入，看到大家玩得开心特别有成就感...' },
@@ -95,6 +96,18 @@ export default function Module2Page() {
         <div>
           <h1 className="text-2xl font-bold text-ink">找到擅长的事</h1>
           <p className="text-muted text-sm">才能 — How — 你的无意识习惯就是天赋</p>
+        </div>
+      </div>
+
+      {/* Book reference hint */}
+      <div className="bg-blue-50/80 border border-blue-200/60 rounded-xl p-3 md:p-4 flex items-start gap-3">
+        <span className="text-lg flex-shrink-0 mt-0.5">📖</span>
+        <div className="text-sm">
+          <p className="font-medium text-blue-800">关联书中第五部分：找到擅长的事（才能）</p>
+          <p className="text-blue-600/80 mt-0.5">
+            建议先阅读书中关于 <strong>「才能=无意识习惯」</strong> 和 <strong>「缺点即优点转换法」</strong> 的内容（第五部分），
+            理解才能是天生的思维/情感/行动习惯，不是后天学的技能，这样更容易发现自己真正的长处。
+          </p>
         </div>
       </div>
 
@@ -228,6 +241,43 @@ export default function Module2Page() {
                 />
               </div>
             </div>
+
+            {/* CSV 批量导入才能 */}
+            <CsvImport
+              title="📥 批量导入才能"
+              description="下载模板，填写你的才能/长处后上传 CSV 文件批量导入。"
+              template={{
+                filename: '才能列表模板.csv',
+                headers: ['description', 'level', 'how_to_use'],
+                sampleRows: [
+                  ['善于倾听他人的心声', '◎', '在团队讨论中记录每个人的观点'],
+                  ['能把复杂的事情讲清楚', '〇', ''],
+                  ['做事有条理喜欢规划', '△', ''],
+                ],
+              }}
+              onImport={(rows) => {
+                rows.forEach((row) => {
+                  if (row.description?.trim() && !store.talents.find(t => t.description === row.description.trim())) {
+                    const validLevels = ['◎', '〇', '△'];
+                    const level = validLevels.includes(row.level?.trim()) ? row.level.trim() as '◎' | '〇' | '△' : '〇';
+                    store.addTalent({
+                      id: Date.now().toString() + Math.random(),
+                      description: row.description.trim(),
+                      level,
+                      howToUse: row.how_to_use || '',
+                    });
+                  }
+                });
+              }}
+              validateRow={(row, i) => {
+                if (!row.description?.trim()) return `第 ${i + 1} 行缺少才能描述 (description 列为空)`;
+                if (row.level?.trim() && !['◎', '〇', '△'].includes(row.level.trim())) {
+                  return `第 ${i + 1} 行等级无效：应为 ◎、〇 或 △（或留空）`;
+                }
+                return null;
+              }}
+              hint="level 可选：◎（重点使用）、〇（辅助使用）、△（待观察），不填默认为 〇"
+            />
           </div>
         )}
 
@@ -267,6 +317,36 @@ export default function Module2Page() {
                 </button>
               </div>
             </div>
+
+            {/* CSV 批量导入缺点转换 */}
+            <CsvImport
+              title="📥 批量导入缺点→优点转换"
+              description={'下载模板，填写「缺点」和「转换后」上传 CSV 文件批量导入。'}
+              template={{
+                filename: '缺点转换模板.csv',
+                headers: ['flaw', 'transformation'],
+                sampleRows: [
+                  ['我很认生', '正因为认生，我才能认真对待重要的人'],
+                  ['我太敏感', '正因为敏感，我才能注意到别人忽略的细节'],
+                  ['我很容易纠结', '正因为纠结，我才能全面考虑问题'],
+                ],
+              }}
+              onImport={(rows) => {
+                rows.forEach((row) => {
+                  if (row.flaw?.trim() && row.transformation?.trim()) {
+                    store.addFlawTransformation({
+                      flaw: row.flaw.trim(),
+                      transformation: row.transformation.trim(),
+                    });
+                  }
+                });
+              }}
+              validateRow={(row, i) => {
+                if (!row.flaw?.trim()) return `第 ${i + 1} 行缺少缺点描述 (flaw 列为空)`;
+                if (!row.transformation?.trim()) return `第 ${i + 1} 行缺少转换后描述 (transformation 列为空)`;
+                return null;
+              }}
+            />
 
             {store.flawTransformations.length > 0 && (
               <div className="space-y-2">

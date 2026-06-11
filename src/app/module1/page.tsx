@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useStore } from '@/store';
 import { ArrowRight, ArrowLeft, Plus, Trash2, Check, Lightbulb, AlertCircle, Sparkles } from 'lucide-react';
 import AIAnalyzer from '@/components/AIAnalyzer';
+import CsvImport from '@/components/CsvImport';
 
 const QUESTIONS = [
   { id: 'q1', title: '你尊敬的人是谁？', desc: '尊敬他们什么地方？写下你敬佩的具体特质。', placeholder: '例：我尊敬乔布斯，因为他有极致的追求完美和打破常规的勇气...' },
@@ -70,6 +71,18 @@ export default function Module1Page() {
         <div>
           <h1 className="text-2xl font-bold text-ink">找到重要的事</h1>
           <p className="text-muted text-sm">价值观 — Why — 人生的指南针</p>
+        </div>
+      </div>
+
+      {/* Book reference hint */}
+      <div className="bg-blue-50/80 border border-blue-200/60 rounded-xl p-3 md:p-4 flex items-start gap-3">
+        <span className="text-lg flex-shrink-0 mt-0.5">📖</span>
+        <div className="text-sm">
+          <p className="font-medium text-blue-800">关联书中第四部分：找到重要的事（价值观）</p>
+          <p className="text-blue-600/80 mt-0.5">
+            建议先阅读书中关于 <strong>「真假价值观辨别」</strong> 和 <strong>「可控性检测」</strong> 的内容（第四部分·步骤3），
+            理解"我想做"与"我应该做"的区别后再答题，思路会更清晰。
+          </p>
         </div>
       </div>
 
@@ -203,6 +216,41 @@ export default function Module1Page() {
               </div>
             </div>
 
+            {/* CSV 批量导入 */}
+            <CsvImport
+              title="📥 批量导入关键词"
+              description="下载模板，在表格中填写各问题的关键词，再上传 CSV 文件批量导入。"
+              template={{
+                filename: '价值观关键词模板.csv',
+                headers: ['question_id', 'question_title', 'keyword'],
+                sampleRows: [
+                  ['q1', '你尊敬的人是谁？', '诚信'],
+                  ['q1', '你尊敬的人是谁？', '责任感'],
+                  ['q2', '小时候什么经历对你影响最大？', '自由'],
+                  ['q3', '你觉得现在的社会有什么不足？', '连接'],
+                ],
+              }}
+              onImport={(rows) => {
+                rows.forEach((row) => {
+                  if (row.keyword?.trim()) {
+                    store.addValueKeyword({
+                      id: Date.now().toString() + Math.random(),
+                      text: row.keyword.trim(),
+                      questionId: row.question_id || `q${Math.floor(Math.random() * 5) + 1}`,
+                    });
+                  }
+                });
+              }}
+              validateRow={(row, i) => {
+                if (!row.keyword?.trim()) return `第 ${i + 1} 行缺少关键词 (keyword 列为空)`;
+                if (!row.question_id) return `第 ${i + 1} 行缺少问题编号 (question_id 列为空)`;
+                const validIds = ['q1', 'q2', 'q3', 'q4', 'q5'];
+                if (!validIds.includes(row.question_id)) return `第 ${i + 1} 行问题编号无效：应为 q1~q5`;
+                return null;
+              }}
+              hint="question_id 对应 5 个问题：q1=尊敬的人、q2=童年经历、q3=社会不足、q4=别人看重的、q5=最想告诉别人的"
+            />
+
             {/* Switch question hint */}
             <div className="flex gap-2">
               {activeQuestion > 0 && (
@@ -321,6 +369,48 @@ export default function Module1Page() {
                 <p className="text-xs text-muted mt-1">AI 会根据关键词的语义自动分组，生成核心价值观候选。</p>
               </div>
             )}
+
+            {/* CSV 批量导入核心价值观 */}
+            <div className="border-t border-border-warm/30 pt-4">
+              <CsvImport
+                title="📥 批量导入核心价值观"
+                description="下载模板，填写核心价值观后上传 CSV 文件批量导入。"
+                template={{
+                  filename: '核心价值观模板.csv',
+                  headers: ['core_value', 'order', 'is_controllable', 'deep_desire'],
+                  sampleRows: [
+                    ['诚信', '0', 'true', ''],
+                    ['自由', '1', 'false', '被尊重和认可'],
+                    ['成长', '2', 'true', ''],
+                  ],
+                }}
+                onImport={(rows) => {
+                  rows.forEach((row) => {
+                    if (row.core_value?.trim()) {
+                      const exists = store.coreValues.find(cv => cv.text === row.core_value.trim());
+                      if (!exists) {
+                        store.setCoreValues([
+                          ...store.coreValues,
+                          {
+                            id: Date.now().toString() + Math.random(),
+                            text: row.core_value.trim(),
+                            order: parseInt(row.order) || store.coreValues.length,
+                            isControllable: row.is_controllable !== 'false',
+                            deepDesire: row.deep_desire || '',
+                            isTrue: row.is_controllable !== 'false',
+                          },
+                        ]);
+                      }
+                    }
+                  });
+                }}
+                validateRow={(row, i) => {
+                  if (!row.core_value?.trim()) return `第 ${i + 1} 行缺少核心价值观 (core_value 列为空)`;
+                  return null;
+                }}
+                hint="is_controllable 填 true 或 false；deep_desire 填写不可控价值观背后的深层渴望"
+              />
+            </div>
           </div>
         )}
 

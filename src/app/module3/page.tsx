@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useStore } from '@/store';
 import { ArrowRight, ArrowLeft, Plus, Trash2, Check, AlertTriangle, Lightbulb, Sparkles } from 'lucide-react';
 import AIAnalyzer from '@/components/AIAnalyzer';
+import CsvImport from '@/components/CsvImport';
 
 const PASSION_QUESTIONS = [
   { id: 'pq1', title: '即使花钱也想学习/体验的是什么？', desc: '有没有什么事是你愿意自费投入时间和金钱的？这暴露了你的纯粹兴趣。', placeholder: '例：即使花钱也想学心理学、想体验不同的咖啡文化...' },
@@ -58,6 +59,18 @@ export default function Module3Page() {
         <div>
           <h1 className="text-2xl font-bold text-ink">找到喜欢的事</h1>
           <p className="text-muted text-sm">热情 — What — 你真正好奇的领域</p>
+        </div>
+      </div>
+
+      {/* Book reference hint */}
+      <div className="bg-blue-50/80 border border-blue-200/60 rounded-xl p-3 md:p-4 flex items-start gap-3">
+        <span className="text-lg flex-shrink-0 mt-0.5">📖</span>
+        <div className="text-sm">
+          <p className="font-medium text-blue-800">关联书中第六部分：找到喜欢的事（热情）</p>
+          <p className="text-blue-600/80 mt-0.5">
+            建议先阅读书中关于 <strong>区分"因为兴趣所以喜欢"与"因为有用所以喜欢"</strong> 的内容（第六部分），
+            理解 <strong>「合理性陷阱」</strong> 的概念——如果你总用"这个有用吗？"来判断一切，可能会扼杀真正的兴趣。
+          </p>
         </div>
       </div>
 
@@ -167,6 +180,42 @@ export default function Module3Page() {
                 />
               </div>
             </div>
+
+            {/* CSV 批量导入兴趣线索 */}
+            <CsvImport
+              title="📥 批量导入兴趣线索"
+              description="下载模板，填写各问题的兴趣领域后上传 CSV 文件批量导入。"
+              template={{
+                filename: '热情兴趣模板.csv',
+                headers: ['question_id', 'question_title', 'area'],
+                sampleRows: [
+                  ['pq1', '即使花钱也想学习的是什么？', '心理学'],
+                  ['pq2', '你的书架上摆着什么书？', '个人成长'],
+                  ['pq3', '有什么让你有被拯救了的感觉？', '哲学'],
+                  ['pq4', '迄今为止你想道谢的工作是什么？', '教育'],
+                  ['pq5', '对社会中的什么事情感到愤怒？', '环境保护'],
+                ],
+              }}
+              onImport={(rows) => {
+                rows.forEach((row) => {
+                  if (row.area?.trim() && !store.passions.find(p => p.area === row.area.trim())) {
+                    store.addPassion({
+                      id: Date.now().toString() + Math.random(),
+                      area: row.area.trim(),
+                      questionId: row.question_id || `pq${Math.floor(Math.random() * 5) + 1}`,
+                    });
+                  }
+                });
+              }}
+              validateRow={(row, i) => {
+                if (!row.area?.trim()) return `第 ${i + 1} 行缺少兴趣领域 (area 列为空)`;
+                if (row.question_id && !['pq1', 'pq2', 'pq3', 'pq4', 'pq5'].includes(row.question_id)) {
+                  return `第 ${i + 1} 行问题编号无效：应为 pq1~pq5`;
+                }
+                return null;
+              }}
+              hint="question_id 对应 5 个问题：pq1=花钱想学的、pq2=书架上的书、pq3=被拯救的感觉、pq4=想道谢的工作、pq5=感到愤怒的事"
+            />
           </div>
         )}
 
