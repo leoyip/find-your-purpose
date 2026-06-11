@@ -137,6 +137,29 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* 导出报告提示 */}
+      <section className="bg-gradient-to-r from-amber-50 to-orange-50/70 rounded-2xl border border-primary/20 p-5 md:p-6 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <span className="text-2xl">📄</span>
+          <h2 className="text-lg font-semibold text-ink">完成所有问答，导出你的专属报告</h2>
+        </div>
+        <p className="text-sm text-muted max-w-lg mx-auto">
+          完成全部 4 个模块的问答后，你可以在仪表盘中导出 <strong>Markdown</strong> 或 <strong>PDF</strong> 格式的完整自我认知报告，
+          包含价值观金字塔、才能清单、兴趣领域和组合方案，方便你随时回顾和分享。
+        </p>
+        {doneSteps > 0 && (
+          <div className="mt-4 flex items-center justify-center gap-2 text-sm">
+            <div className="flex-1 max-w-xs h-2 bg-amber-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-orange-400 rounded-full transition-all duration-700"
+                style={{ width: `${(doneSteps / totalSteps) * 100}%` }}
+              />
+            </div>
+            <span className="text-muted font-mono text-xs">{doneSteps}/{totalSteps}</span>
+          </div>
+        )}
+      </section>
+
       {/* 隐私说明 */}
       <section className="text-center py-4">
         <div className="inline-flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-5 py-2.5 rounded-xl shadow-sm">
